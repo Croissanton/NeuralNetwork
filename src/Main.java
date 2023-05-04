@@ -1,3 +1,4 @@
+package src;
 
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
