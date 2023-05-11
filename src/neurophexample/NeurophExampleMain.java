@@ -14,8 +14,8 @@ import java.util.Random;
 public class NeurophExampleMain {
     private static final int SAMPLES = 1000;
     private static final int GRID_SIZE = 100;
-    private static final int NUM_EPOCHS = 400; // After testing with higher numbers, we have found that around 400 is where the error converges,
-                                               // and from this point on it won't get much lower.
+    private static final int NUM_EPOCHS = 1000; // After testing with higher numbers, we have found that around 1000 the error is already low enough
+                                               // and from this point on it won't get much lower. We should stop here to avoid overfitting since we have a good enough model.
     private static final double SPACE = 2 * Math.PI / GRID_SIZE;
 
     public static void main(String[] args) {
@@ -24,14 +24,16 @@ public class NeurophExampleMain {
 
         MultiLayerPerceptron neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, 2, 5, 7, 5, 1);
 
-        neuralNetwork.getLearningRule().setLearningRate(0.1);
-        neuralNetwork.getLearningRule().setMaxError(0.01);
+        neuralNetwork.getLearningRule().setLearningRate(0.02); // After testing we ended up choosing 0.02 as the best learning rate with this number of epochs and neuralNetwork.
+        neuralNetwork.getLearningRule().setMaxIterations(1); // Set to 1 so the learning is not iterative and is instead done with epochs.
 
         for (int i = 1; i <= NUM_EPOCHS; i++) {
+            //learn() method is used to train the neural network with the training set.
+            //It does a learning epoch each time it is called.
             neuralNetwork.getLearningRule().learn(trainingSet);
 
-            double trainingError = calculateMeanSquaredError(neuralNetwork, trainingSet);
-            double validationError = calculateMeanSquaredError(neuralNetwork, validationSet);
+            double trainingError = calculateMeanSquaredError(neuralNetwork, trainingSet); //Error comparing the output of the neural network with the desired output of the training set.
+            double validationError = calculateMeanSquaredError(neuralNetwork, validationSet); //Error comparing the output of the neural network with the desired output of the validation set.
 
             System.out.printf("Epoch: %d, Training Error: %.5f, Validation Error: %.5f\n", i, trainingError, validationError);
         }
