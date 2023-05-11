@@ -3,6 +3,7 @@ package neurophexample;
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
 import org.neuroph.core.data.DataSetRow;
+import org.neuroph.core.learning.SupervisedLearning;
 import org.neuroph.nnet.MultiLayerPerceptron;
 import org.neuroph.util.TransferFunctionType;
 import java.io.BufferedWriter;
@@ -13,7 +14,8 @@ import java.util.Random;
 public class NeurophExampleMain {
     private static final int SAMPLES = 1000;
     private static final int GRID_SIZE = 100;
-    private static final int NUM_EPOCHS = 500; // After testing with higher numbers, we have found that 100 is where the square error reaches its minimum.
+    private static final int NUM_EPOCHS = 400; // After testing with higher numbers, we have found that around 400 is where the error converges,
+                                               // and from this point on it won't get much lower.
     private static final double SPACE = 2 * Math.PI / GRID_SIZE;
 
     public static void main(String[] args) {
@@ -21,11 +23,12 @@ public class NeurophExampleMain {
         DataSet validationSet = generateDataSet(SAMPLES);
 
         MultiLayerPerceptron neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, 2, 5, 7, 5, 1);
+
         neuralNetwork.getLearningRule().setLearningRate(0.1);
         neuralNetwork.getLearningRule().setMaxError(0.01);
 
         for (int i = 1; i <= NUM_EPOCHS; i++) {
-            neuralNetwork.learn(trainingSet);
+            neuralNetwork.getLearningRule().learn(trainingSet);
 
             double trainingError = calculateMeanSquaredError(neuralNetwork, trainingSet);
             double validationError = calculateMeanSquaredError(neuralNetwork, validationSet);
@@ -33,7 +36,7 @@ public class NeurophExampleMain {
             System.out.printf("Epoch: %d, Training Error: %.5f, Validation Error: %.5f\n", i, trainingError, validationError);
         }
 
-        DataSet testSet = generateTestSamples(GRID_SIZE);
+        DataSet testSet = generateTestSamples();
         double testError = calculateMeanSquaredError(neuralNetwork, testSet);
         System.out.printf("Test Error: %.5f\n", testError);
 
@@ -55,11 +58,11 @@ public class NeurophExampleMain {
         return dataSet;
     }
 
-    private static DataSet generateTestSamples(int gridSize) {
+    private static DataSet generateTestSamples() {
         DataSet dataSet = new DataSet(2, 1);
 
-        for (int i = 0; i < gridSize; i++) {
-            for (int j = 0; j < gridSize; j++) {
+        for (int i = 0; i < NeurophExampleMain.GRID_SIZE; i++) {
+            for (int j = 0; j < NeurophExampleMain.GRID_SIZE; j++) {
                 double x = -Math.PI + i * SPACE;
                 double y = -Math.PI + j * SPACE;
                 double f = Math.sin(x) * Math.cos(y);
@@ -80,7 +83,7 @@ public class NeurophExampleMain {
             double[] networkOutput = neuralNetwork.getOutput();
             double output = row.getDesiredOutput()[0];
             data[dataSet.indexOf(row)] = new String[]{String.valueOf(row.getInput()[0]), String.valueOf(row.getInput()[1]), String.valueOf(networkOutput[0]), String.valueOf(output)};
-//            System.out.printf("x: %f, y: %f, real: %f, desired: %f\n", row.getInput()[0], row.getInput()[1], networkOutput[0], output);
+            System.out.printf("x: %f, y: %f, obtained: %f, desired: %f\n", row.getInput()[0], row.getInput()[1], networkOutput[0], output);
         }
 
         String csvFile = "test.csv";
