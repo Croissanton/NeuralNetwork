@@ -3,13 +3,14 @@ package neurophexample;
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
 import org.neuroph.core.data.DataSetRow;
-import org.neuroph.core.learning.SupervisedLearning;
 import org.neuroph.nnet.MultiLayerPerceptron;
 import org.neuroph.util.TransferFunctionType;
 import java.io.BufferedWriter;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.Random;
-
 
 public class NeurophExampleMain {
     private static final int SAMPLES = 1000;
@@ -18,9 +19,17 @@ public class NeurophExampleMain {
                                                // and from this point on it won't get much lower. We should stop here to avoid overfitting since we have a good enough model.
     private static final double SPACE = 2 * Math.PI / GRID_SIZE;
 
+
+
     public static void main(String[] args) {
-        DataSet trainingSet = generateDataSet(SAMPLES);
-        DataSet validationSet = generateDataSet(SAMPLES);
+        DataSet trainingSet = generateDataSet();
+        DataSet validationSet = generateDataSet();
+            try {
+                PrintStream o = new PrintStream("output.txt");
+                System.setOut(o);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
 
         MultiLayerPerceptron neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, 2, 5, 7, 5, 1);
 
@@ -45,11 +54,11 @@ public class NeurophExampleMain {
         printToCsv(neuralNetwork, testSet);
     }
 
-    private static DataSet generateDataSet(int size) {
+    private static DataSet generateDataSet() {
         DataSet dataSet = new DataSet(2, 1);
         Random random = new Random();
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < NeurophExampleMain.SAMPLES; i++) {
             double x = (random.nextDouble() * 2 * Math.PI) - Math.PI;
             double y = (random.nextDouble() * 2 * Math.PI) - Math.PI;
             double f = Math.sin(x) * Math.cos(y);
@@ -85,7 +94,6 @@ public class NeurophExampleMain {
             double[] networkOutput = neuralNetwork.getOutput();
             double output = row.getDesiredOutput()[0];
             data[dataSet.indexOf(row)] = new String[]{String.valueOf(row.getInput()[0]), String.valueOf(row.getInput()[1]), String.valueOf(networkOutput[0]), String.valueOf(output)};
-            System.out.printf("x: %f, y: %f, obtained: %f, desired: %f\n", row.getInput()[0], row.getInput()[1], networkOutput[0], output);
         }
 
         String csvFile = "test.csv";
