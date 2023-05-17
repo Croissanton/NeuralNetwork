@@ -16,25 +16,29 @@ public class NeurophExampleMain {
     private static final int SAMPLES = 1000;
     private static final int GRID_SIZE = 100;
     private static final int NUM_EPOCHS = 1000; // After testing with higher numbers, we have found that around 1000 the error is already low enough
-                                               // and from this point on it won't get much lower. We should stop here to avoid overfitting since we have a good enough model.
+    // and from this point on it won't get much lower. We should stop here to avoid overfitting since we have a good enough model.
     private static final double SPACE = 2 * Math.PI / GRID_SIZE;
-
+    private static double[] trainingErrors;
+    private static double[] validationErrors;
 
 
     public static void main(String[] args) {
         DataSet trainingSet = generateDataSet();
         DataSet validationSet = generateDataSet();
-            try {
-                PrintStream o = new PrintStream("output.txt");
-                System.setOut(o);
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            PrintStream o = new PrintStream("output.txt");
+            System.setOut(o);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
 
         MultiLayerPerceptron neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, 2, 5, 7, 5, 1);
 
         neuralNetwork.getLearningRule().setLearningRate(0.02); // After testing we ended up choosing 0.02 as the best learning rate with this number of epochs and neuralNetwork.
         neuralNetwork.getLearningRule().setMaxIterations(1); // Set to 1 so the learning is not iterative and is instead done with epochs.
+
+        trainingErrors = new double[NUM_EPOCHS];
+        validationErrors = new double[NUM_EPOCHS];
 
         for (int i = 1; i <= NUM_EPOCHS; i++) {
             //learn() method is used to train the neural network with the training set.
@@ -43,8 +47,11 @@ public class NeurophExampleMain {
 
             double trainingError = calculateMeanSquaredError(neuralNetwork, trainingSet); //Error comparing the output of the neural network with the desired output of the training set.
             double validationError = calculateMeanSquaredError(neuralNetwork, validationSet); //Error comparing the output of the neural network with the desired output of the validation set.
-
             System.out.printf("Epoch: %d, Training Error: %.5f, Validation Error: %.5f\n", i, trainingError, validationError);
+
+            //We add the errors to the arrays so we can plot them later.
+            trainingErrors[i - 1] = trainingError;
+            validationErrors[i - 1] = validationError;
         }
 
         DataSet testSet = generateTestSamples();
@@ -86,7 +93,8 @@ public class NeurophExampleMain {
     }
 
     private static void printToCsv(NeuralNetwork<?> neuralNetwork, DataSet dataSet) {
-        String[] headers = {"x", "y", "real", "desired"};
+        String[] headers3D = {"x", "y", "real", "desired"};
+        String[] headersErrors = {"TrainingError", "ValidationError"};
         String[][] data = new String[dataSet.size()][4];
         for (DataSetRow row : dataSet) {
             neuralNetwork.setInput(row.getInput());
@@ -96,9 +104,26 @@ public class NeurophExampleMain {
             data[dataSet.indexOf(row)] = new String[]{String.valueOf(row.getInput()[0]), String.valueOf(row.getInput()[1]), String.valueOf(networkOutput[0]), String.valueOf(output)};
         }
 
-        String csvFile = "test.csv";
-        try (BufferedWriter writer = new BufferedWriter(new java.io.FileWriter(csvFile))) {
-            for (String header : headers) {
+        String fileErrors = "errors.csv";
+        try (BufferedWriter writer = new BufferedWriter(new java.io.FileWriter(fileErrors))) {
+            for (String header : headersErrors) {
+                writer.write(header);
+                writer.write(",");
+            }
+            writer.newLine();
+            for (int i = 0; i < NUM_EPOCHS; i++) {
+                writer.write(String.valueOf(trainingErrors[i]));
+                writer.write(",");
+                writer.write(String.valueOf(validationErrors[i]));
+                writer.newLine();
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+        String file3D = "test3D.csv";
+        try (BufferedWriter writer = new BufferedWriter(new java.io.FileWriter(file3D))) {
+            for (String header : headers3D) {
                 writer.write(header);
                 writer.write(",");
             }
